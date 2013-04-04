@@ -9,7 +9,7 @@ var node_js = typeof exports === 'object';
     define(factory);
   } else {
     // Browser globals (root is window)
-    root.returnExports = factory();
+    root.localeval = factory().localeval;
   }
 }(this, function () {
 
@@ -29,7 +29,9 @@ if (node_js) {
       while (obj !== null) {
         globals = Object.getOwnPropertyNames(obj);
         for (var i = 0; i < globals.length; i++) {
-          reset += globals[i] + ',';
+          if (globals[i] !== 'eval') {
+            reset += globals[i] + ',';
+          }
         }
         obj = Object.getPrototypeOf(obj);
       }
@@ -53,8 +55,8 @@ if (node_js) {
       sandboxed += field + ' = ' + sandboxName + '["' + field + '"],';
     }
     sandboxed += 'undefined;';
-    var ret = Function(sandboxName, resetEnv() + sandboxed + source)
-      .bind(Object.create(null))(sandbox);
+    var ret = Function(sandboxName, resetEnv() + sandboxed + 'return eval(' +
+          JSON.stringify(source) + ')').bind(Object.create(null))(sandbox);
     return ret;
   }
 
