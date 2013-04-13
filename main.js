@@ -13,6 +13,8 @@ var node_js = typeof exports === 'object';
   }
 }(this, function () {
 
+// Different implementations for browser and node.js.
+
 if (node_js) {
 
   var vm = require('vm');
@@ -44,19 +46,56 @@ if (node_js) {
     return reset;
   }
 
+  function dupProto(constructor) {
+    var fakeProto = Object.create(null);
+    var pnames = Object.getOwnPropertyNames(constructor.prototype);
+    for (var i = 0; i < pnames.length; i++) {
+      fakeProto[pnames[i]] = constructor.prototype[pnames[i]];
+    }
+    return fakeProto;
+  }
+
+  function redirectProto(constructor, proto) {
+    var pnames = Object.getOwnPropertyNames(proto);
+    for (var i = 0; i < pnames.length; i++) {
+      constructor.prototype[pnames[i]] = proto[pnames[i]];
+    }
+  }
+
+  var builtins = [Object, Function, Array, String, Boolean, Number, Date, RegExp, Error, EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError];
+  var realProtos = new Array(builtins.length);
+  for (var i = 0; i < builtins.length; i++) {
+    realProtos[i] = dupProto(builtins[i]);
+  }
+
+  function alienate() {
+    // Fake all builtins' prototypes.
+    for (var i = 0; i < builtins.length; i++) {
+      redirectProto(builtins[i], dupProto(builtins[i]));
+    }
+  }
+
+  function unalienate() {
+    for (var i = 0; i < builtins.length; i++) {
+      redirectProto(builtins[i], realProtos[i]);
+    }
+  }
+
   // Evaluate code as a String (`source`) without letting global variables get
-  // used or modified. The `sandbox` is an object containing variables we want to
-  // pass in.
+  // used or modified. The `sandbox` is an object containing variables we want
+  // to pass in.
   function leaklessEval(source, sandbox, sandboxName) {
     sandbox = sandbox || Object.create(null);
     sandboxName = sandboxName || '$sandbox$';
     var sandboxed = 'var ';
     for (var field in sandbox) {
-      sandboxed += field + ' = ' + sandboxName + '["' + field + '"],';
+      sandboxed += field + '=' + sandboxName + '["' + field + '"],';
     }
     sandboxed += 'undefined;';
+    alienate();
     var ret = Function(sandboxName, resetEnv() + sandboxed + 'return eval(' +
           JSON.stringify(source) + ')').bind(Object.create(null))(sandbox);
+    unalienate();
     return ret;
   }
 

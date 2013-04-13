@@ -4,7 +4,7 @@ Evaluate a string of JS code without access to the global object.
 
 Always use that instead of `eval()`. Always.
 
-(Eventual) API:
+API:
 
     localeval(code :: String, sandbox :: Object) :: Object.
 
@@ -22,7 +22,7 @@ localeval('console.log("Do I have access to the console?")');  // Throws.
 Browser example:
 
 ```html
-<!doctype html>
+<!doctype html><title></title>
 <script src='localeval.js'></script>
 <!-- Alerts "32". -->
 <script> alert(localeval('a + b', {a: 14, b: 18})) </script>
@@ -30,15 +30,17 @@ Browser example:
 
 # Warning
 
-Those only describe current limitations in browsers, and may be lifted in the
-future.
+It doesn't protect your single-threaded code against infinite loops.
 
-1. Evaluated code can still fiddle with some global object's properties.
+That said, it protects against any security leaks.
+
+1. All local and global variables are inaccessible.
+
+2. Variables defined while evaluating code don't pollute any scope.
+
+3. Evaluated code cannot fiddle with global object's properties.
    Think
    `localeval('([]).__proto__.push = function(a) { return "nope"; }')`.
-   It even crashes node in command-line mode.
-
-2. It doesn't protect your single-threaded code against infinite loops.
 
 # Purpose
 
