@@ -32,7 +32,7 @@ Browser example:
 
 It doesn't protect your single-threaded code against infinite loops.
 
-That said, it protects against any security leaks.
+That said, it protects against any security leak.
 
 1. All local and global variables are inaccessible.
 
