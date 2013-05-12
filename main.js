@@ -17,8 +17,27 @@ var node_js = typeof exports === 'object';
 
 if (node_js) {
 
-  var vm = require('vm');
-  return vm.runInNewContext;
+  return function(code, sandbox, timeout, cb) {
+    // Optional parameters: sandbox, timeout, cb.
+    if (timeout != null) {
+      // We have a timeout. Run in separate process.
+      var cp = require('child_process');
+      var child = cp.fork(__dirname + '/child.js');
+      var th = setTimeout(function() {
+        child.kill('SIGKILL');
+      }, timeout);
+      child.on('message', function(m) {
+        clearTimeout(th);
+        if (cb) { cb(m.result); }
+      });
+      child.send({ code: code, sandbox: sandbox });
+
+    } else {
+      // No timeout. Blocking execution.
+      var vm = require('vm');
+      return vm.runInNewContext(code, sandbox);
+    }
+  };
 
 } else {
   // Assume a browser environment.

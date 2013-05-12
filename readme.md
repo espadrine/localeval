@@ -8,9 +8,13 @@ API:
 
     localeval(code :: String, sandbox :: Object) :: Object.
 
+    localeval(code :: String,    sandbox :: Object,
+              timeout :: Number, cb :: Function)
+
 The `code` is a string of JS code. The `sandbox` contains objects which are
 going to be accessible in the JS code.
-It returns the last evaluated piece of JS code in `code`.
+It returns the last evaluated piece of JS code in `code`, if no timeout is
+given. Otherwise, the callback gives that result as a parameter.
 
 Node example:
 
@@ -30,7 +34,10 @@ Browser example:
 
 # Warning
 
-It doesn't protect your single-threaded code against infinite loops.
+If no timeout is given, it doesn't protect your single-threaded code against
+infinite loops.
+
+You cannot give a timeout in browser code (for now).
 
 That said, it protects against any security leak.
 
