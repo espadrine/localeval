@@ -50,6 +50,8 @@ if (node_js) {
 } else {
   // Assume a browser environment.
 
+  // Produce the code to shadow all globals in the environment
+  // through lexical binding.
   function resetEnv(global) {
     var reset = 'var ';
     if (Object.getOwnPropertyNames) {
@@ -73,6 +75,8 @@ if (node_js) {
     return reset;
   }
 
+  // Given a constructor function, do a deep copy of its prototype
+  // and return the copy.
   function dupProto(constructor) {
     var fakeProto = Object.create(null);
     var pnames = Object.getOwnPropertyNames(constructor.prototype);
@@ -89,19 +93,22 @@ if (node_js) {
     }
   }
 
+  // Keep in store all real builtin prototypes to restore them after
+  // a possible alteration during the evaluation.
   var builtins = [Object, Function, Array, String, Boolean, Number, Date, RegExp, Error, EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError];
   var realProtos = new Array(builtins.length);
   for (var i = 0; i < builtins.length; i++) {
     realProtos[i] = dupProto(builtins[i]);
   }
 
+  // Fake all builtins' prototypes.
   function alienate() {
-    // Fake all builtins' prototypes.
     for (var i = 0; i < builtins.length; i++) {
       redirectProto(builtins[i], dupProto(builtins[i]));
     }
   }
 
+  // Restore all builtins' prototypes.
   function unalienate() {
     for (var i = 0; i < builtins.length; i++) {
       redirectProto(builtins[i], realProtos[i]);
@@ -111,9 +118,9 @@ if (node_js) {
   // Evaluate code as a String (`source`) without letting global variables get
   // used or modified. The `sandbox` is an object containing variables we want
   // to pass in.
-  function leaklessEval(source, sandbox, sandboxName) {
+  function leaklessEval(source, sandbox, timeout, cb) {
     sandbox = sandbox || Object.create(null);
-    sandboxName = sandboxName || '$sandbox$';
+    var sandboxName = '$sandbox$';
     var sandboxed = 'var ';
     for (var field in sandbox) {
       sandboxed += field + '=' + sandboxName + '["' + field + '"],';
