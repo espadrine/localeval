@@ -37,8 +37,6 @@ Browser example:
 If no timeout is given, it doesn't protect your single-threaded code against
 infinite loops.
 
-You cannot give a timeout in browser code (for now).
-
 That said, it protects against any security leak.
 
 1. All local and global variables are inaccessible.
