@@ -32,6 +32,8 @@ Browser example:
 <script> alert(localeval('a + b', {a: 14, b: 18})) </script>
 ```
 
+You may find an example of use in browser code in `main.html`.
+
 # Warning
 
 If no timeout is given, it doesn't protect your single-threaded code against
