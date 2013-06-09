@@ -1,6 +1,6 @@
 {
   "name": "localeval",
-  "main": "main.js",
+  "main": "localeval.js",
   "description": "A sandboxed eval().",
   "author": "Thaddee Tyl <thaddee.tyl@gmail.com> (http://espadrine.github.com/)",
   "contributors": [

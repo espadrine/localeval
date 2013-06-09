@@ -68,7 +68,7 @@ if (node_js) {
       }
     } else {
       for (var sym in this) {
-        reset += globals[i] + ',';
+        reset += sym + ',';
       }
     }
     reset += 'undefined;';
@@ -118,7 +118,7 @@ if (node_js) {
   // Evaluate code as a String (`source`) without letting global variables get
   // used or modified. The `sandbox` is an object containing variables we want
   // to pass in.
-  function leaklessEval(source, sandbox, timeout, cb) {
+  function leaklessEval(source, sandbox) {
     sandbox = sandbox || Object.create(null);
     var sandboxName = '$sandbox$';
     var sandboxed = 'var ';
@@ -133,7 +133,34 @@ if (node_js) {
     return ret;
   }
 
-  return {localeval: leaklessEval};
+  var worker;
+  function startChild() {
+    worker = new Worker('worker.js');
+  }
+
+  function localeval(source, sandbox, timeout, cb) {
+    // Optional parameters: sandbox, timeout, cb.
+    if (timeout != null) {
+      // We have a timeout. Run in web worker.
+      if (worker == null) {
+        startChild();
+      }
+      var th = setTimeout(function() {
+        worker.terminate();
+        startChild();
+      }, timeout);
+      worker.onmessage = function(m) {
+        clearTimeout(th);
+        if (cb) { cb(m.data.result); }
+      };
+      worker.postMessage({ code: source, sandbox: sandbox });
+    } else {
+      // No timeout. Blocking execution.
+      return leaklessEval(source, sandbox);
+    }
+  }
+
+  return {localeval: localeval};
 
 }
 
