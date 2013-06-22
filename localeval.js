@@ -32,11 +32,14 @@ if (node_js) {
       }
       var th = setTimeout(function() {
         child.kill('SIGKILL');
+        if (cb) {
+          cb(new Error('The script took more than ' + timeout + 'ms. Abort.'));
+        }
         startChild();
       }, timeout);
       child.once('message', function(m) {
         clearTimeout(th);
-        if (cb) { cb(m.result); }
+        if (cb) { cb(null, m.result); }
       });
       child.send({ code: code, sandbox: sandbox });
 
@@ -147,11 +150,14 @@ if (node_js) {
       }
       var th = setTimeout(function() {
         worker.terminate();
+        if (cb) {
+          cb(new Error('The script took more than ' + timeout + 'ms. Abort.'));
+        }
         startChild();
       }, timeout);
       worker.onmessage = function(m) {
         clearTimeout(th);
-        if (cb) { cb(m.data.result); }
+        if (cb) { cb(null, m.data.result); }
       };
       worker.postMessage({ code: source, sandbox: sandbox });
     } else {

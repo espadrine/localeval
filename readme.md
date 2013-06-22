@@ -14,7 +14,8 @@ API:
 The `code` is a string of JS code. The `sandbox` contains objects which are
 going to be accessible in the JS code.
 It returns the last evaluated piece of JS code in `code`, if no timeout is
-given. Otherwise, the callback gives that result as a parameter.
+given. Otherwise, the callback gives that result as a parameter:
+`function(error, result) {…}`.
 
 Node example:
 
