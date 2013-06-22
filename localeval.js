@@ -39,7 +39,11 @@ if (node_js) {
       }, timeout);
       child.once('message', function(m) {
         clearTimeout(th);
-        if (cb) { cb(null, m.result); }
+        if (cb) {
+          if (m.error) {
+            cb(new Error(m.error));
+          } else cb(null, m.result);
+        }
       });
       child.send({ code: code, sandbox: sandbox });
 
