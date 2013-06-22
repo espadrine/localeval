@@ -1,7 +1,13 @@
 onmessage = function(m) {
-  postMessage({
-    result: leaklessEval(m.data.code, m.data.sandbox)
-  });
+  try {
+    postMessage({
+      result: leaklessEval(m.data.code, m.data.sandbox)
+    });
+  } catch(e) {
+    postMessage({
+      error: e.message
+    });
+  }
 };
 
 

@@ -157,7 +157,11 @@ if (node_js) {
       }, timeout);
       worker.onmessage = function(m) {
         clearTimeout(th);
-        if (cb) { cb(null, m.data.result); }
+        if (cb) {
+          if (m.data.error) {
+            cb(new Error(m.data.error));
+          } else cb(null, m.data.result);
+        }
       };
       worker.postMessage({ code: source, sandbox: sandbox });
     } else {
