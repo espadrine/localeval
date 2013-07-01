@@ -18,10 +18,10 @@ var node_js = typeof exports === 'object';
 if (node_js) {
 
   var child;
-  function startChild() {
+  var startChild = function startChild() {
     var cp = require('child_process');
     child = cp.fork(__dirname + '/child.js');
-  }
+  };
 
   return function(code, sandbox, timeout, cb) {
     // Optional parameters: sandbox, timeout, cb.
@@ -41,7 +41,8 @@ if (node_js) {
         clearTimeout(th);
         if (cb) {
           if (m.error) {
-            cb(new Error(m.error));
+            console.log(JSON.stringify(m.error));
+            cb(m.error);
           } else cb(null, m.result);
         }
       });
@@ -59,6 +60,8 @@ if (node_js) {
 
   // Produce the code to shadow all globals in the environment
   // through lexical binding.
+  // See also var `builtins`.
+  var builtinsStr = ['eval', 'Object', 'Function', 'Array', 'String', 'Boolean', 'Number', 'Date', 'RegExp', 'Error', 'EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError'];
   function resetEnv(global) {
     var reset = 'var ';
     if (Object.getOwnPropertyNames) {
@@ -67,7 +70,7 @@ if (node_js) {
       while (obj !== null) {
         globals = Object.getOwnPropertyNames(obj);
         for (var i = 0; i < globals.length; i++) {
-          if (globals[i] !== 'eval') {
+          if (builtinsStr.indexOf(globals[i]) === -1) {
             reset += globals[i] + ',';
           }
         }
@@ -85,6 +88,7 @@ if (node_js) {
   // Given a constructor function, do a deep copy of its prototype
   // and return the copy.
   function dupProto(constructor) {
+    if (!constructor.prototype) return;
     var fakeProto = Object.create(null);
     var pnames = Object.getOwnPropertyNames(constructor.prototype);
     for (var i = 0; i < pnames.length; i++) {
@@ -94,6 +98,7 @@ if (node_js) {
   }
 
   function redirectProto(constructor, proto) {
+    if (!constructor.prototype) return;
     var pnames = Object.getOwnPropertyNames(proto);
     for (var i = 0; i < pnames.length; i++) {
       constructor.prototype[pnames[i]] = proto[pnames[i]];
@@ -102,7 +107,7 @@ if (node_js) {
 
   // Keep in store all real builtin prototypes to restore them after
   // a possible alteration during the evaluation.
-  var builtins = [Object, Function, Array, String, Boolean, Number, Date, RegExp, Error, EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError];
+  var builtins = [eval, Object, Function, Array, String, Boolean, Number, Date, RegExp, Error, EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError];
   var realProtos = new Array(builtins.length);
   for (var i = 0; i < builtins.length; i++) {
     realProtos[i] = dupProto(builtins[i]);
@@ -128,22 +133,26 @@ if (node_js) {
   function leaklessEval(source, sandbox) {
     sandbox = sandbox || Object.create(null);
     var sandboxName = '$sandbox$';
+    var evalFile = '\n//# sourceURL=sandbox.js\n';
     var sandboxed = 'var ';
     for (var field in sandbox) {
       sandboxed += field + '=' + sandboxName + '["' + field + '"],';
     }
     sandboxed += 'undefined;';
     alienate();
-    var ret = Function(sandboxName, resetEnv() + sandboxed + 'return eval(' +
-          JSON.stringify(source) + ')').bind(Object.create(null))(sandbox);
+    var params = builtinsStr.concat(sandboxName);
+    var f = Function.apply(null, params.concat(resetEnv() + sandboxed
+          + '\nreturn eval(' + JSON.stringify(source + evalFile) + ')'));
+    f.displayName = 'sandbox';
+    var ret = f.apply(null, builtins.concat(sandbox));
     unalienate();
     return ret;
   }
 
   var worker;
-  function startChild() {
+  var startChild = function startChild() {
     worker = new Worker('worker.js');
-  }
+  };
 
   function localeval(source, sandbox, timeout, cb) {
     // Optional parameters: sandbox, timeout, cb.
@@ -163,7 +172,7 @@ if (node_js) {
         clearTimeout(th);
         if (cb) {
           if (m.data.error) {
-            cb(new Error(m.data.error));
+            cb(m.data.error);
           } else cb(null, m.data.result);
         }
       };

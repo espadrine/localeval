@@ -5,7 +5,7 @@ onmessage = function(m) {
     });
   } catch(e) {
     postMessage({
-      error: e.message
+      error: {message: e.message, stack: e.stack}
     });
   }
 };
@@ -14,9 +14,10 @@ onmessage = function(m) {
 // Do not change what is below without changing localeval.js
 //
 
-
 // Produce the code to shadow all globals in the environment
 // through lexical binding.
+// See also var `builtins`.
+var builtinsStr = ['eval', 'Object', 'Function', 'Array', 'String', 'Boolean', 'Number', 'Date', 'RegExp', 'Error', 'EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError'];
 function resetEnv(global) {
   var reset = 'var ';
   if (Object.getOwnPropertyNames) {
@@ -25,7 +26,7 @@ function resetEnv(global) {
     while (obj !== null) {
       globals = Object.getOwnPropertyNames(obj);
       for (var i = 0; i < globals.length; i++) {
-        if (globals[i] !== 'eval') {
+        if (builtinsStr.indexOf(globals[i]) === -1) {
           reset += globals[i] + ',';
         }
       }
@@ -43,6 +44,7 @@ function resetEnv(global) {
 // Given a constructor function, do a deep copy of its prototype
 // and return the copy.
 function dupProto(constructor) {
+  if (!constructor.prototype) return;
   var fakeProto = Object.create(null);
   var pnames = Object.getOwnPropertyNames(constructor.prototype);
   for (var i = 0; i < pnames.length; i++) {
@@ -52,6 +54,7 @@ function dupProto(constructor) {
 }
 
 function redirectProto(constructor, proto) {
+  if (!constructor.prototype) return;
   var pnames = Object.getOwnPropertyNames(proto);
   for (var i = 0; i < pnames.length; i++) {
     constructor.prototype[pnames[i]] = proto[pnames[i]];
@@ -60,7 +63,7 @@ function redirectProto(constructor, proto) {
 
 // Keep in store all real builtin prototypes to restore them after
 // a possible alteration during the evaluation.
-var builtins = [Object, Function, Array, String, Boolean, Number, Date, RegExp, Error, EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError];
+var builtins = [eval, Object, Function, Array, String, Boolean, Number, Date, RegExp, Error, EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError];
 var realProtos = new Array(builtins.length);
 for (var i = 0; i < builtins.length; i++) {
   realProtos[i] = dupProto(builtins[i]);
@@ -86,15 +89,18 @@ function unalienate() {
 function leaklessEval(source, sandbox) {
   sandbox = sandbox || Object.create(null);
   var sandboxName = '$sandbox$';
+  var evalFile = '\n//# sourceURL=sandbox.js\n';
   var sandboxed = 'var ';
   for (var field in sandbox) {
     sandboxed += field + '=' + sandboxName + '["' + field + '"],';
   }
   sandboxed += 'undefined;';
   alienate();
-  var ret = Function(sandboxName, resetEnv() + sandboxed + 'return eval(' +
-        JSON.stringify(source) + ')').bind(Object.create(null))(sandbox);
+  var params = builtinsStr.concat(sandboxName);
+  var f = Function.apply(null, params.concat(resetEnv() + sandboxed
+        + '\nreturn eval(' + JSON.stringify(source + evalFile) + ')'));
+  f.displayName = 'sandbox';
+  var ret = f.apply(null, builtins.concat(sandbox));
   unalienate();
   return ret;
 }
-
