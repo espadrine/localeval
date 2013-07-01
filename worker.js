@@ -5,7 +5,7 @@ onmessage = function(m) {
     });
   } catch(e) {
     postMessage({
-      error: {message: e.message, stack: e.stack}
+      error: {name: e.name, message: e.message, stack: e.stack}
     });
   }
 };

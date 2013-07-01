@@ -7,7 +7,7 @@ process.on('message', function(m) {
     });
   } catch(e) {
     process.send({
-      error: {message: e.message, stack: e.stack}
+      error: {name: e.name, message: e.message, stack: e.stack}
     });
   }
 });
