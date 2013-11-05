@@ -1,3 +1,4 @@
+// Thaddée Tyl <thaddee.tyl@gmail.com>. License: CC-BY v3.
 var vm = require('vm');
 
 process.on('message', function(m) {
