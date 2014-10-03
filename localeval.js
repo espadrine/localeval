@@ -82,7 +82,7 @@ if (node_js) {
         reset += sym + ',';
       }
     }
-    reset += 'undefined;';
+    reset += 'undefined,arguments=undefined;';
     return reset;
   }
 
