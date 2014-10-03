@@ -142,7 +142,8 @@ if (node_js) {
     sandboxed += 'undefined;';
     alienate();
     var params = builtinsStr.concat(sandboxName);
-    var f = Function.apply(null, params.concat(resetEnv() + sandboxed
+    var f = Function.apply(null, params.concat('"use strict";'
+          + resetEnv() + sandboxed
           + '\nreturn eval(' + JSON.stringify(source + evalFile) + ')'));
     f.displayName = 'sandbox';
     var ret = f.apply(null, builtins.concat(sandbox));
