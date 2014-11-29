@@ -163,13 +163,11 @@ if (node_js) {
   var builtins = [eval, Object, Function, Array, String, Boolean, Number, Date, RegExp, Error, EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError];
   var realProtos = new Array(builtins.length);
   var realProperties = new Array(builtins.length);
-  for (var i = 0; i < builtins.length; i++) {
-    realProtos[i] = dupProto(builtins[i]);
-  }
 
   // Fake all builtins' prototypes.
   function alienate() {
     for (var i = 0; i < builtins.length; i++) {
+      realProtos[i] = dupProto(builtins[i]);
       redirectProto(builtins[i], dupProto(builtins[i]));
       realProperties[i] = dupProperties(builtins[i]);
     }
