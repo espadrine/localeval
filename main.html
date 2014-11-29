@@ -13,10 +13,10 @@
 (function() {
   var form = document.forms[0];
   buttimeout.addEventListener('click', function() {
-    localeval(source.value, {}, 1000, function(m) { alert(m); });
+    localeval(source.value, null, 1000, function(m) { alert(m); });
   });
   butnotimeout.addEventListener('click', function() {
-    alert(localeval(source.value, {}));
+    alert(localeval(source.value, null));
   });
 }());
 </script>

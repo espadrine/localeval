@@ -14,8 +14,8 @@ API:
 The `code` is a string of JS code. The `sandbox` contains objects which are
 going to be accessible in the JS code.
 It returns the last evaluated piece of JS code in `code`, if no timeout is
-given. Otherwise, the callback gives that result as a parameter:
-`function(error, result) {…}`.
+given. Otherwise, after at most `timeout` milliseconds, the callback gives that
+result as a parameter: `function(error, result) {…}`.
 
 Node example:
 
@@ -35,6 +35,10 @@ Browser example:
 
 You may find an example of use in browser code in `main.html`.
 
+# Purpose
+
+Trying to find a reasonable cross-environment ES5 sandbox evaluation function.
+
 # Warning
 
 If no timeout is given, it doesn't protect your single-threaded code against
@@ -50,9 +54,23 @@ That said, it protects against any security leak.
    Think
    `localeval('([]).__proto__.push = function(a) { return "nope"; }')`.
 
-# Purpose
+# Things to try
 
-Trying to find a reasonable cross-environment ES5 sandbox evaluation function.
+In comments are what should be executed outside the sandbox.
+
+```js
+String.prototype.slice = function() { return 'leaked'; };
+// 'nice'.slice(1) === 'ice'
+String.fromCharCode = function() { return 'leaked'; };
+// String.fromCharCode(42) === '*'
+// var foo = 1
+foo = 7
+this.foo = 7
+window.foo = 7
+// foo === 1
+delete Number.parseInt
+// Number.parseInt('1337') === 1337
+```
 
 ---
 

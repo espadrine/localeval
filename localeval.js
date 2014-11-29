@@ -59,11 +59,31 @@ if (node_js) {
 } else {
   // Assume a browser environment.
 
+  var reservedWords = [
+    "break", "do", "in", "typeof",
+    "case", "else", "instanceof", "var",
+    "catch", "export", "new", "void",
+    "class", "extends", "return", "while",
+    "const", "finally", "super", "with",
+    "continue", "for", "switch", "yield",
+    "debugger", "function", "this",
+    "delete", "import", "try",
+    "enum", "implements", "package", "protected", "static",
+    "interface", "private", "public",
+    'eval'
+  ];
+  var identifier = /^[$_a-zA-Z][$_a-zA-Z0-9]*$/;
+  var acceptableVariable = function acceptableVariable(v) {
+    return (builtinsStr.indexOf(v) === -1) &&
+      (reservedWords.indexOf(v) === -1) &&
+      (identifier.test(v));
+  };
+
   // Produce the code to shadow all globals in the environment
   // through lexical binding.
   // See also var `builtins`.
   var builtinsStr = ['eval', 'Object', 'Function', 'Array', 'String', 'Boolean', 'Number', 'Date', 'RegExp', 'Error', 'EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError'];
-  function resetEnv(global) {
+  var resetEnv = function resetEnv(global) {
     var reset = 'var ';
     if (Object.getOwnPropertyNames) {
       var obj = this;
@@ -71,7 +91,7 @@ if (node_js) {
       while (obj !== null) {
         globals = Object.getOwnPropertyNames(obj);
         for (var i = 0; i < globals.length; i++) {
-          if (builtinsStr.indexOf(globals[i]) === -1) {
+          if (acceptableVariable(globals[i])) {
             reset += globals[i] + ',';
           }
         }
@@ -79,7 +99,9 @@ if (node_js) {
       }
     } else {
       for (var sym in this) {
-        reset += sym + ',';
+        if (acceptableVariable(sym)) {
+          reset += sym + ',';
+        }
       }
     }
     reset += 'undefined,arguments=undefined;';
@@ -122,6 +144,7 @@ if (node_js) {
   }
 
   // Restore all builtins' prototypes.
+  // TODO: remove keys that weren't there before.
   function unalienate() {
     for (var i = 0; i < builtins.length; i++) {
       redirectProto(builtins[i], realProtos[i]);
@@ -142,11 +165,12 @@ if (node_js) {
     sandboxed += 'undefined;';
     alienate();
     var params = builtinsStr.concat(sandboxName);
-    var f = Function.apply(null, params.concat('"use strict";'
+    var sourceStr = JSON.stringify(source + evalFile);
+    var f = Function.apply(null, params.concat(''
           + resetEnv() + sandboxed
-          + '\nreturn eval(' + JSON.stringify(source + evalFile) + ')'));
+          + '\nreturn eval(' + sourceStr + ')'));
     f.displayName = 'sandbox';
-    var ret = f.apply(null, builtins.concat(sandbox));
+    var ret = f.apply(0, builtins.concat(sandbox));
     unalienate();
     return ret;
   }
