@@ -128,10 +128,41 @@ if (node_js) {
     }
   }
 
+  var dupProperties = function(obj) {
+    var fakeObj = Object.create(null);
+    var pnames = Object.getOwnPropertyNames(obj);
+    for (var i = 0; i < pnames.length; i++) {
+      fakeObj[pnames[i]] = obj[pnames[i]];
+      // We cannot deal with cyclic data and reference graphs,
+      // so we discard them.
+      if (typeof obj[pnames[i]] === 'object') {
+        delete obj[pnames[i]];
+      }
+    }
+    return fakeObj;
+  };
+
+  var resetProperties = function(obj, fakeObj) {
+    var pnames = Object.getOwnPropertyNames(fakeObj);
+    for (var i = 0; i < pnames.length; i++) {
+      obj[pnames[i]] = fakeObj[pnames[i]];
+    }
+  };
+
+  var removeAddedProperties = function(obj, fakeObj) {
+    var pnames = Object.getOwnPropertyNames(obj);
+    for (var i = 0; i < pnames.length; i++) {
+      if (fakeObj[pnames[i]] === undefined) {
+        delete obj[pnames[i]];
+      }
+    }
+  };
+
   // Keep in store all real builtin prototypes to restore them after
   // a possible alteration during the evaluation.
   var builtins = [eval, Object, Function, Array, String, Boolean, Number, Date, RegExp, Error, EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError];
   var realProtos = new Array(builtins.length);
+  var realProperties = new Array(builtins.length);
   for (var i = 0; i < builtins.length; i++) {
     realProtos[i] = dupProto(builtins[i]);
   }
@@ -140,14 +171,16 @@ if (node_js) {
   function alienate() {
     for (var i = 0; i < builtins.length; i++) {
       redirectProto(builtins[i], dupProto(builtins[i]));
+      realProperties[i] = dupProperties(builtins[i]);
     }
   }
 
   // Restore all builtins' prototypes.
-  // TODO: remove keys that weren't there before.
   function unalienate() {
     for (var i = 0; i < builtins.length; i++) {
       redirectProto(builtins[i], realProtos[i]);
+      removeAddedProperties(builtins[i], realProperties[i]);
+      resetProperties(builtins[i], realProperties[i]);
     }
   }
 
