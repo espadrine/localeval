@@ -70,6 +70,8 @@ window.foo = 7
 // foo === 1
 delete Number.parseInt
 // Number.parseInt('1337') === 1337
+String.prototype.leak = function() { return 'leak'; }
+// try { ''.leak() } catch(e) { /not a function/.test(e.message) }
 ```
 
 ---
