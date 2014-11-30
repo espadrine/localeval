@@ -150,6 +150,7 @@ if (node_js) {
   };
 
   var removeAddedProperties = function(obj, fakeObj) {
+    if (!fakeObj) return;
     var pnames = Object.getOwnPropertyNames(obj);
     for (var i = 0; i < pnames.length; i++) {
       if (fakeObj[pnames[i]] === undefined) {
@@ -176,6 +177,7 @@ if (node_js) {
   // Restore all builtins' prototypes.
   function unalienate() {
     for (var i = 0; i < builtins.length; i++) {
+      removeAddedProperties(builtins[i].prototype, realProtos[i]);
       redirectProto(builtins[i], realProtos[i]);
       removeAddedProperties(builtins[i], realProperties[i]);
       resetProperties(builtins[i], realProperties[i]);
