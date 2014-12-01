@@ -13,7 +13,7 @@
 (function() {
   var form = document.forms[0];
   buttimeout.addEventListener('click', function() {
-    localeval(source.value, null, 1000, function(m) { alert(m); });
+    localeval(source.value, null, 1000, function(m) { alert(JSON.stringify(m)); });
   });
   butnotimeout.addEventListener('click', function() {
     alert(localeval(source.value, null));
