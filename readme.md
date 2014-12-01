@@ -45,7 +45,11 @@ If no timeout is given, it doesn't protect your single-threaded code against
 infinite loops. Additionally, the following leak:
 
 - `({}).constructor.getOwnPropertyNames = function(){return 'leak';}`
-- `(function() { Function("this.foo = 'leak'")() }())`
+- `Function("this.foo = 'leak'")()`
+
+If a timeout is given, an attacker can still use XHR:
+
+- `Function("this.XMLHttpRequest(…); …")()`
 
 That said, it protects against any security leak.
 
