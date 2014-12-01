@@ -11,40 +11,63 @@ onmessage = function(m) {
   }
 };
 
+var global = this;
 
 // Do not change what is below without changing localeval.js
 //
 
+var reservedWords = [
+  "break", "do", "in", "typeof",
+  "case", "else", "instanceof", "var",
+  "catch", "export", "new", "void",
+  "class", "extends", "return", "while",
+  "const", "finally", "super", "with",
+  "continue", "for", "switch", "yield",
+  "debugger", "function", "this",
+  "delete", "import", "try",
+  "enum", "implements", "package", "protected", "static",
+  "interface", "private", "public",
+  'eval'
+];
+var identifier = /^[$_a-zA-Z][$_a-zA-Z0-9]*$/;
+var acceptableVariable = function acceptableVariable(v) {
+  return (builtinsStr.indexOf(v) === -1) &&
+    (reservedWords.indexOf(v) === -1) &&
+    (identifier.test(v));
+};
+
 // Produce the code to shadow all globals in the environment
 // through lexical binding.
 // See also var `builtins`.
-var builtinsStr = ['eval', 'Object', 'Function', 'Array', 'String', 'Boolean', 'Number', 'Date', 'RegExp', 'Error', 'EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError'];
-function resetEnv(global) {
+var builtinsStr = ['JSON', 'Object', 'Function', 'Array', 'String', 'Boolean', 'Number', 'Date', 'RegExp', 'Error', 'EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError'];
+var resetEnv = function() {
   var reset = 'var ';
   if (Object.getOwnPropertyNames) {
-    var obj = this;
+    var obj = global;
     var globals;
-    while (obj !== null) {
+    while (obj != null) {
       globals = Object.getOwnPropertyNames(obj);
       for (var i = 0; i < globals.length; i++) {
-        if (builtinsStr.indexOf(globals[i]) === -1) {
+        if (acceptableVariable(globals[i])) {
           reset += globals[i] + ',';
         }
       }
       obj = Object.getPrototypeOf(obj);
     }
   } else {
-    for (var sym in this) {
-      reset += sym + ',';
+    for (var sym in global) {
+      if (acceptableVariable(sym)) {
+        reset += sym + ',';
+      }
     }
   }
-  reset += 'undefined,arguments=undefined;';
+  reset += 'undefined;';
   return reset;
 }
 
 // Given a constructor function, do a deep copy of its prototype
 // and return the copy.
-function dupProto(constructor) {
+var dupProto = function(constructor) {
   if (!constructor.prototype) return;
   var fakeProto = Object.create(null);
   var pnames = Object.getOwnPropertyNames(constructor.prototype);
@@ -52,42 +75,84 @@ function dupProto(constructor) {
     fakeProto[pnames[i]] = constructor.prototype[pnames[i]];
   }
   return fakeProto;
-}
+};
 
-function redirectProto(constructor, proto) {
+var redirectProto = function(constructor, proto) {
   if (!constructor.prototype) return;
   var pnames = Object.getOwnPropertyNames(proto);
   for (var i = 0; i < pnames.length; i++) {
-    constructor.prototype[pnames[i]] = proto[pnames[i]];
+    try {
+      constructor.prototype[pnames[i]] = proto[pnames[i]];
+    } catch(e) {}
   }
-}
+};
+
+var dupProperties = function(obj) {
+  var fakeObj = Object.create(null);
+  var pnames = Object.getOwnPropertyNames(obj);
+  for (var i = 0; i < pnames.length; i++) {
+    fakeObj[pnames[i]] = obj[pnames[i]];
+    // We cannot deal with cyclic data and reference graphs,
+    // so we discard them.
+    if (typeof obj[pnames[i]] === 'object') {
+      try {
+        delete obj[pnames[i]];
+      } catch(e) {}
+    }
+  }
+  return fakeObj;
+};
+
+var resetProperties = function(obj, fakeObj) {
+  var pnames = Object.getOwnPropertyNames(fakeObj);
+  for (var i = 0; i < pnames.length; i++) {
+    try {
+      obj[pnames[i]] = fakeObj[pnames[i]];
+    } catch(e) {}
+  }
+};
+
+var removeAddedProperties = function(obj, fakeObj) {
+  if (!fakeObj) return;
+  var pnames = Object.getOwnPropertyNames(obj);
+  for (var i = 0; i < pnames.length; i++) {
+    if (fakeObj[pnames[i]] === undefined) {
+      try {
+        delete obj[pnames[i]];
+      } catch(e) {}
+    }
+  }
+};
 
 // Keep in store all real builtin prototypes to restore them after
 // a possible alteration during the evaluation.
-var builtins = [eval, Object, Function, Array, String, Boolean, Number, Date, RegExp, Error, EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError];
+var builtins = [JSON, Object, Function, Array, String, Boolean, Number, Date, RegExp, Error, EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError];
 var realProtos = new Array(builtins.length);
-for (var i = 0; i < builtins.length; i++) {
-  realProtos[i] = dupProto(builtins[i]);
-}
+var realProperties = new Array(builtins.length);
 
 // Fake all builtins' prototypes.
-function alienate() {
+var alienate = function() {
   for (var i = 0; i < builtins.length; i++) {
+    realProtos[i] = dupProto(builtins[i]);
     redirectProto(builtins[i], dupProto(builtins[i]));
+    realProperties[i] = dupProperties(builtins[i]);
   }
-}
+};
 
 // Restore all builtins' prototypes.
-function unalienate() {
+var unalienate = function() {
   for (var i = 0; i < builtins.length; i++) {
+    removeAddedProperties(builtins[i].prototype, realProtos[i]);
     redirectProto(builtins[i], realProtos[i]);
+    removeAddedProperties(builtins[i], realProperties[i]);
+    resetProperties(builtins[i], realProperties[i]);
   }
-}
+};
 
 // Evaluate code as a String (`source`) without letting global variables get
 // used or modified. The `sandbox` is an object containing variables we want
 // to pass in.
-function leaklessEval(source, sandbox) {
+var leaklessEval = function(source, sandbox) {
   sandbox = sandbox || Object.create(null);
   var sandboxName = '$sandbox$';
   var evalFile = '\n//# sourceURL=sandbox.js\n';
@@ -96,13 +161,14 @@ function leaklessEval(source, sandbox) {
     sandboxed += field + '=' + sandboxName + '["' + field + '"],';
   }
   sandboxed += 'undefined;';
-  alienate();
   var params = builtinsStr.concat(sandboxName);
-  var f = Function.apply(null, params.concat('"use strict";'
+  var sourceStr = JSON.stringify('"use strict";' + source + evalFile);
+  var f = Function.apply(null, params.concat(''
         + resetEnv() + sandboxed
-        + '\nreturn eval(' + JSON.stringify(source + evalFile) + ')'));
+        + '\nreturn eval(' + sourceStr + ')'));
   f.displayName = 'sandbox';
-  var ret = f.apply(null, builtins.concat(sandbox));
+  alienate();
+  var ret = f.apply(0, builtins.concat(sandbox));
   unalienate();
   return ret;
-}
+};
