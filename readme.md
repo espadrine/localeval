@@ -42,7 +42,10 @@ Trying to find a reasonable cross-environment ES5 sandbox evaluation function.
 # Warning
 
 If no timeout is given, it doesn't protect your single-threaded code against
-infinite loops.
+infinite loops. Additionally, the following leak:
+
+- `({}).constructor.getOwnPropertyNames = function(){return 'leak';}`
+- `(function() { Function("this.foo = 'leak'")() }())`
 
 That said, it protects against any security leak.
 
@@ -67,6 +70,7 @@ String.fromCharCode = function() { return 'leaked'; };
 foo = 7
 this.foo = 7
 window.foo = 7
+eval('foo = 7')
 // foo === 1
 delete Number.parseInt
 // Number.parseInt('1337') === 1337
