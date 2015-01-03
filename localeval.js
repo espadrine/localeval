@@ -24,7 +24,7 @@ if (node_js) {
     child = cp.fork(__dirname + '/child.js');
   };
 
-  return function(code, sandbox, timeout, cb) {
+  var evaluator = function(code, sandbox, timeout, cb) {
     // Optional parameters: sandbox, timeout, cb.
     if (timeout != null) {
       // We have a timeout. Run in separate process.
@@ -55,6 +55,12 @@ if (node_js) {
       return vm.runInNewContext(code, sandbox);
     }
   };
+
+  evaluator.clear = function() {
+    child.kill('SIGKILL');
+  };
+
+  return evaluator;
 
 } else {
   // Assume a browser environment.
