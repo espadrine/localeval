@@ -22,6 +22,7 @@ Node example:
 ```javascript
 var localeval = require('localeval');
 localeval('console.log("Do I have access to the console?")');  // Throws.
+localeval.clear();  // Kills processes used internally.
 ```
 
 Browser example:
@@ -38,6 +39,8 @@ You may find an example of use in browser code in `main.html`.
 # Purpose
 
 Trying to find a reasonable cross-environment ES5 sandbox evaluation function.
+
+Offering a process-separated timeout-ed VM for node.
 
 # Warning
 
