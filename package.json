@@ -8,6 +8,10 @@
   ],
   "version": "15.2.3",
   "homepage": "http://espadrine.github.com/localeval/",
+  "scripts": {
+    "test": "karma start --singleRun=true",
+    "test-watch": "karma start"
+  },
   "browser": {
     "child_process": false
   },
@@ -16,7 +20,12 @@
     "url": "git://github.com/espadrine/localeval.git"
   },
   "dependencies": {},
-  "devDependencies": {},
+  "devDependencies": {
+    "karma": "^0.13.19",
+    "karma-mocha": "^0.2.1",
+    "karma-phantomjs-launcher": "^0.2.3",
+    "phantomjs": "^1.9.19"
+  },
   "optionalDependencies": {},
   "engines": {
     "node": ">=0.4.0"
