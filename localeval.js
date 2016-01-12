@@ -3,7 +3,7 @@
 var node_js = typeof exports === 'object';
 (function (root, factory) {
   if (typeof exports === 'object') {
-    // Node.
+    // CommonJS. node, webpack, browserify, etc...
     module.exports = factory();
   } else if (typeof define === 'function' && define.amd) {
     // AMD. Register as an anonymous module.
