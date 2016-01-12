@@ -1,10 +1,5 @@
 // Thaddée Tyl <thaddee.tyl@gmail.com>. License: CC-BY v3.
 "use strict";
-var node_js = typeof exports === 'object';
-if ("undefined" !== typeof process && process.browser) {
-  // webpack sets browser property on process global
-  node_js = false;
-}
 (function (root, factory) {
   if (typeof exports === 'object') {
     // CommonJS. node, webpack, browserify, etc...
@@ -19,6 +14,9 @@ if ("undefined" !== typeof process && process.browser) {
 }(this, function (global) {
 
 // Different implementations for browser and node.js.
+var webpack = global.process !== undefined &&
+  global.process.browser !== undefined;
+var node_js = typeof exports === 'object' && !webpack;
 
 if (node_js) {
 
