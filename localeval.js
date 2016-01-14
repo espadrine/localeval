@@ -3,7 +3,7 @@
 (function (root, factory) {
   if (typeof exports === 'object') {
     // CommonJS. node, webpack, browserify, etc...
-    module.exports = factory();
+    module.exports = factory(root);
   } else if (typeof define === 'function' && define.amd) {
     // AMD. Register as an anonymous module.
     define(factory);
