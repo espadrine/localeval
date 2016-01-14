@@ -72,7 +72,9 @@ var dupProto = function(constructor) {
   var fakeProto = Object.create(null);
   var pnames = Object.getOwnPropertyNames(constructor.prototype);
   for (var i = 0; i < pnames.length; i++) {
-    fakeProto[pnames[i]] = constructor.prototype[pnames[i]];
+    if (pnames[i] !== 'arguments' && pnames[i] !== 'caller') {
+      fakeProto[pnames[i]] = constructor.prototype[pnames[i]];
+    }
   }
   return fakeProto;
 };

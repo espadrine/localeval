@@ -2,7 +2,7 @@
 
 Evaluate a string of JS code without access to the global object.
 
-Always use that instead of `eval()`. Always.
+In Node.js, always use that instead of `eval()`. Always.
 
 API:
 
@@ -25,7 +25,7 @@ localeval('console.log("Do I have access to the console?")');  // Throws.
 localeval.clear();  // Kills processes used internally.
 ```
 
-Browser example:
+Browser example (experimental):
 
 ```html
 <!doctype html><title></title>
@@ -38,14 +38,17 @@ You may find an example of use in browser code in `main.html`.
 
 # Purpose
 
-Trying to find a reasonable cross-environment ES5 sandbox evaluation function.
+Offering a process-separated timeout-ed VM for Node.js.
 
-Offering a process-separated timeout-ed VM for node.
+Trying to find a reasonable cross-environment ES5 sandbox evaluation function.
+Note that the browser part is experimental.
 
 # Warning
 
 If no timeout is given, it doesn't protect your single-threaded code against
-infinite loops. Additionally, the following leak:
+infinite loops.
+
+In the browser, the following leak:
 
 - `({}).constructor.getOwnPropertyNames = function(){return 'leak';}`
 - `Function("this.foo = 'leak'")()`
@@ -54,7 +57,7 @@ If a timeout is given, an attacker can still use XHR:
 
 - `Function("this.XMLHttpRequest(…); …")()`
 
-That said, it protects against any security leak.
+That said, it strives to achieve the following:
 
 1. All local and global variables are inaccessible.
 
