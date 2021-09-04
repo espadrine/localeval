@@ -221,7 +221,7 @@ if (node_js) {
           + '\nreturn eval(' + sourceStr + ')'));
     f.displayName = 'sandbox';
     alienate();
-    var ret = f.apply(0, builtins.concat(sandbox));
+    var ret = f.apply(Object.create(null), builtins.concat(sandbox));
     unalienate();
     return ret;
   };
