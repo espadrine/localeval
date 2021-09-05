@@ -20,41 +20,55 @@ var node_js = typeof exports === 'object' && !webpack;
 
 if (node_js) {
 
+  var cp = require('child_process');
+  var childPath = `${__dirname}/child.js`;
   var child;
   var startChild = function startChild() {
-    var cp = require('child_process');
-    child = cp.fork(__dirname + '/child.js');
+    child = cp.fork(childPath);
   };
 
   var evaluator = function(code, sandbox, timeout, cb) {
     // Optional parameters: sandbox, timeout, cb.
-    if (timeout != null) {
-      // We have a timeout. Run in separate process.
+    var childInput = JSON.stringify({ code, sandbox });
+    var spawnOptions = {
+      timeout,
+      env: {},
+      input: childInput,
+    };
+    if (cb != null) {
+      // We are asynchronous. Spin the background process.
       if (child == null) {
         startChild();
       }
-      var th = setTimeout(function() {
-        child.kill('SIGKILL');
-        if (cb) {
-          cb(new Error('The script took more than ' + timeout + 'ms. Abort.'));
-        }
-        startChild();
-      }, timeout);
-      child.once('message', function(m) {
-        clearTimeout(th);
-        if (cb) {
-          if (m.error) {
-            console.log(JSON.stringify(m.error));
-            cb(m.error);
-          } else cb(null, m.result);
-        }
+      var childOutput = '';
+      child.stdout.on('data', function(data) {
+        childOutput += data.toString();
       });
-      child.send({ code: code, sandbox: sandbox });
+      child.once('close', function(code) {
+        if (code !== 0) {
+          cb(new Error(`localeval terminated with output ${code}`), code);
+        } else {
+          try {
+            var res = JSON.parse(childOutput);
+          } catch(e) {
+            res = { error: e };
+          }
+          cb(res.error, res.output);
+        }
+        startChild();  // Get a worker ready for a low-latency future eval.
+      });
+      child.stdin.write(childInput);
 
     } else {
-      // No timeout. Blocking execution.
-      var vm = require('vm');
-      return vm.runInNewContext(code, sandbox);
+      // Synchronous execution.
+      var childResult =
+        cp.spawnSync(process.execPath, [childPath], spawnOptions);
+      if (childResult.error) { throw childResult.error; }
+      try {
+        var res = JSON.parse(childResult.stdout.toString());
+      } catch(e) { throw new Error(`Failed localeval execution "${code}"`); }
+      if (res.error) { throw res.error; }
+      return res.output;
     }
   };
 
