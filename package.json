@@ -6,11 +6,10 @@
   "contributors": [
     "Thaddee Tyl <thaddee.tyl@gmail.com>"
   ],
-  "version": "15.2.3",
+  "version": "15.2.4",
   "homepage": "http://espadrine.github.com/localeval/",
   "scripts": {
-    "test": "karma start --singleRun=true",
-    "test-watch": "karma start"
+    "test": "mocha"
   },
   "browser": {
     "child_process": false
@@ -19,14 +18,9 @@
     "type": "git",
     "url": "git://github.com/espadrine/localeval.git"
   },
-  "dependencies": {},
   "devDependencies": {
-    "karma": "^0.13.19",
-    "karma-mocha": "^0.2.1",
-    "karma-phantomjs-launcher": "^0.2.3",
-    "phantomjs": "^1.9.19"
+    "mocha": "^9.1.2"
   },
-  "optionalDependencies": {},
   "engines": {
     "node": ">=0.4.0"
   },
