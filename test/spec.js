@@ -49,5 +49,10 @@ describe('synchronous localeval', function() {
       localeval(`this.constructor.constructor('process.exit(0)')()`),
       /Failed localeval execution/);
   });
+  it('uid and gid', function() {
+    assert.throws(() =>
+      localeval(`this.constructor.constructor("process.kill(process.ppid)")()`,
+        {}, {uid: 'games'}),
+      /EPERM/);
+  });
 });
-

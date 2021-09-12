@@ -27,9 +27,20 @@ if (node_js) {
     child = cp.fork(childPath);
   };
 
-  var evaluator = function(code, sandbox, timeout, cb) {
+  var evaluator = function(code, sandbox, options = {}, cb) {
+    if (typeof options === 'number') {
+      var timeout = options;
+      options = {timeout: timeout};
+    } else {
+      var timeout = options.timeout;
+    }
     // Optional parameters: sandbox, timeout, cb.
-    var childInput = JSON.stringify({ code, sandbox });
+    var childInput = JSON.stringify({
+      code,
+      sandbox,
+      uid: options.uid,
+      gid: options.gid,
+    });
     var spawnOptions = {
       timeout,
       env: {},
@@ -245,7 +256,13 @@ if (node_js) {
     worker = new Worker('worker.js');
   };
 
-  var localeval = function(source, sandbox, timeout, cb) {
+  var localeval = function(source, sandbox, options, cb) {
+    if (typeof options === 'number') {
+      var timeout = options;
+      options = {timeout: timeout};
+    } else {
+      var timeout = options.timeout;
+    }
     // Optional parameters: sandbox, timeout, cb.
     if (timeout != null) {
       // We have a timeout. Run in web worker.

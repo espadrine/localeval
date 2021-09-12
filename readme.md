@@ -4,20 +4,29 @@ Evaluate a string of JS code without access to the global object.
 
 In Node.js, always use that instead of `eval()`. Always.
 
+In the browser, do not expect it to be able to safely execute untrusted code
+yet.
+
 API:
 
     localeval(code :: String, sandbox :: Object) :: Object.
 
-    localeval(code :: String,    sandbox :: Object,
-              timeout :: Number, cb :: Function)
+    localeval(code :: String, sandbox :: Object,
+              options :: Object, cb :: Function)
 
-The `code` is a string of JS code. The `sandbox` contains objects which are
-going to be accessible in the JS code.
+- `code`: string of JS code.
+- `sandbox`: object whose values will be in the global object in the sandbox.
+- `options`: object containing the following optional fields:
+  - `timeout`: number of milliseconds that the child process has to run the
+     code, beyond which it will be killed.
+  - `uid`: user id under which the child process must be set, if any.
+  - `gid`: group id under which the child process must be set, if any.
+
 It returns the last evaluated piece of JS code in `code`, if no timeout is
 given. Otherwise, after at most `timeout` milliseconds, the callback gives that
 result as a parameter: `function(error, result) {…}`.
 
-Node example:
+Node.js example:
 
 ```javascript
 var localeval = require('localeval');
