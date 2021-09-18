@@ -1,3 +1,4 @@
+// Child process used to isolate the VM in a Node.js context.
 var vm = require('vm');
 var fs = require('fs');
 try {

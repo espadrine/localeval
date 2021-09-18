@@ -18,6 +18,21 @@ var webpack = global.process !== undefined &&
   global.process.browser !== undefined;
 var node_js = typeof exports === 'object' && !webpack;
 
+// Primitives for restricting access.
+var resetGlobals = function(whitelist) {
+  whitelist = new Set(whitelist);
+  var obj = this;
+  while (obj != null) {
+    var globals = Object.getOwnPropertyNames(obj);
+    for (var i = 0; i < globals.length; i++) {
+      if (!whitelist.has(globals[i])) {
+        this[globals[i]] = null;
+      }
+    }
+    obj = Object.getPrototypeOf(obj);
+  }
+};
+
 if (node_js) {
 
   var cp = require('child_process');
@@ -27,6 +42,34 @@ if (node_js) {
     child = cp.fork(childPath);
   };
 
+  var globalsWhitelist = [
+    'Object',             'Function',           'Array',
+    'Number',             'parseFloat',         'parseInt',
+    'Infinity',           'NaN',                'undefined',
+    'Boolean',            'String',             'Symbol',
+    'Date',               'Promise',            'RegExp',
+    'Error',              'EvalError',          'RangeError',
+    'ReferenceError',     'SyntaxError',        'TypeError',
+    'URIError',           'JSON',               'Math',
+    'Intl',               'ArrayBuffer',        'Uint8Array',
+    'Int8Array',          'Uint16Array',        'Int16Array',
+    'Uint32Array',        'Int32Array',         'Float32Array',
+    'Float64Array',       'Uint8ClampedArray',  'BigUint64Array',
+    'BigInt64Array',      'DataView',           'Map',
+    'BigInt',             'Set',                'WeakMap',
+    'WeakSet',            'Proxy',              'Reflect',
+    'decodeURI',          'decodeURIComponent', 'encodeURI',
+    'encodeURIComponent', 'escape',             'unescape',
+    'isFinite',           'isNaN',              'Buffer',
+    'URL',                'URLSearchParams',    'TextEncoder',
+    'TextDecoder',        'EventTarget',        'Event',
+    'MessageChannel',     'MessagePort',        'MessageEvent',
+    'clearInterval',      'clearTimeout',       'setInterval',
+    'setTimeout',         'queueMicrotask',     'clearImmediate',
+    'setImmediate',       'SharedArrayBuffer',  'Atomics',
+    'AggregateError',     'WeakRef',            'global', 'eval',
+  ];
+
   var evaluator = function(code, sandbox, options = {}, cb) {
     if (typeof options === 'number') {
       var timeout = options;
@@ -34,6 +77,10 @@ if (node_js) {
     } else {
       var timeout = options.timeout;
     }
+
+    // Globals whitelisting for defense in depth.
+    code = `(${resetGlobals.toString()})(${JSON.stringify(globalsWhitelist)});\n` + code;
+
     // Optional parameters: sandbox, timeout, cb.
     var childInput = JSON.stringify({
       code,
@@ -43,9 +90,10 @@ if (node_js) {
     });
     var spawnOptions = {
       timeout,
-      env: {},
+      env: {},  // Ensure that we don't leak environment variables.
       input: childInput,
     };
+
     if (cb != null) {
       // We are asynchronous. Spin the background process.
       if (child == null) {

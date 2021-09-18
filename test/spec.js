@@ -14,7 +14,7 @@ describe('synchronous localeval', function() {
     assert.equal(foo, 1);
 
     assert.throws(() =>
-      localeval(`this.constructor.constructor('return foo')()`),
+      localeval(`({}).constructor.constructor('return foo')()`),
       /foo is not defined/);
 
     localeval(`String.prototype.slice = function() { return 'leaked'; };`);
@@ -44,15 +44,22 @@ describe('synchronous localeval', function() {
           `else return a;` +
         `}("leak", 1e9);`, {}, 1),
       /ETIMEDOUT/);
-
-    assert.throws(() =>
-      localeval(`this.constructor.constructor('process.exit(0)')()`),
-      /Failed localeval execution/);
   });
+
   it('uid and gid', function() {
     assert.throws(() =>
-      localeval(`this.constructor.constructor("process.kill(process.ppid)")()`,
+      localeval(`({}).constructor.constructor("process.kill(process.ppid)")()`,
         {}, {uid: 'games'}),
       /EPERM/);
+  });
+
+  it('forbidden globals', function() {
+    assert.throws(() =>
+      localeval(`this.constructor.constructor('process.exit(0)')()`),
+      /Cannot read property 'constructor' of null/);
+
+    assert.throws(() =>
+      localeval(`({}).constructor.constructor("return process.getgroups()")()`),
+      /process is not defined/);
   });
 });
