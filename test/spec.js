@@ -49,7 +49,7 @@ describe('synchronous localeval', function() {
   it('uid and gid', function() {
     assert.throws(() =>
       localeval(`({}).constructor.constructor("process.kill(process.ppid)")()`,
-        {}, {uid: 'games'}),
+        {}, {uid: 'games', gid: 'games'}),
       /EPERM/);
   });
 

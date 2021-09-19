@@ -6,7 +6,7 @@
   "contributors": [
     "Thaddee Tyl <thaddee.tyl@gmail.com>"
   ],
-  "version": "15.2.4",
+  "version": "15.3.0",
   "homepage": "http://espadrine.github.com/localeval/",
   "scripts": {
     "test": "mocha"

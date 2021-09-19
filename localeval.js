@@ -132,7 +132,9 @@ if (node_js) {
   };
 
   evaluator.clear = function() {
-    child.kill('SIGKILL');
+    if (child) {
+      child.kill('SIGKILL');
+    }
   };
 
   return evaluator;

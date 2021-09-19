@@ -45,19 +45,36 @@ Browser example (experimental):
 
 You may find an example of use in browser code in `main.html`.
 
-# Purpose
+# Security
 
-Offering a process-separated timeout-ed VM for Node.js.
+In Node.js, the following barriers are in place:
 
-Trying to find a reasonable cross-environment ES5 sandbox evaluation function.
-Note that the browser part is experimental.
+- The code executes in a process-separated environment, benefitting from
+  OS-level security protections such as memory separation. That is true for both
+  the asynchronous and the synchronous version.
+- The code can be put on a timeout, to ensure it cannot loop indefinitely to
+  cause a denial of service.
+- The code can be set to a zero-access user ID, ensuring that even if there was
+  a vulnerability that allowed file system access, the OS would prevent reading
+  confidential information, overwriting it, or executing sensitive code.
+- The code executes inside of a V8 isolate, which ensures the execution is
+  separated from the process' code (which after all needs enough access to send
+  the result back to the main process). Thus the code has a separate object
+  graph and cannot affect that of the process it runs in.
+  The environment is destroyed afterwards, as the whole process is exited.
+- On top of that, the isolate sandbox is crippled: only whitelisted globals are
+  accessible. The others are not just syntactically shadowed, but outright
+  garbage-collected.
 
 # Warning
 
-If no timeout is given, it doesn't protect your single-threaded code against
-infinite loops.
+## In Node.js
 
-In the browser, the following leak:
+We strongly recommend to set a timeout, and to set a uid and gid.
+
+## In the browser
+
+The following inputs leak:
 
 - `({}).constructor.getOwnPropertyNames = function(){return 'leak';}`
 - `Function("this.foo = 'leak'")()`
